@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profesyonel Instagram Haber Stüdyosu v3.7.0</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- html2canvas -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Montserrat:ital,wght@0,500;0,700;0,800;0,900;1,900&family=Oswald:wght@600;700&family=Playfair+Display:ital,wght@0,700;0,900;1,700;1,900&family=Roboto:wght@700;900&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #0b0f19; color: #f1f5f9; }
+        .font-montserrat { font-family: 'Montserrat', sans-serif; }
+        .font-oswald { font-family: 'Oswald', sans-serif; }
+        .font-playfair { font-family: 'Playfair Display', serif; }
+        .font-roboto { font-family: 'Roboto', sans-serif; }
+        .vertical-rail-text { writing-mode: vertical-rl; transform: rotate(180deg); text-orientation: mixed; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 9999px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+        .post-shadow { box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.9), 0 0 0 1px rgba(255, 255, 255, 0.08); }
+        .preview-grid-bg { background-image: radial-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px); background-size: 24px 24px; }
+        .media-layer { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+        .watermark-overlay { position: absolute; inset: 0; z-index: 15; pointer-events: none; background-repeat: repeat; }
+        
+        /* Fotoğraf Filtreleri */
+        .filter-grayscale { filter: grayscale(100%) contrast(120%); }
+        .filter-cinematic { filter: sepia(30%) contrast(115%) brightness(95%) saturate(120%); }
+        .filter-cyberpunk { filter: hue-rotate(180deg) saturate(180%) contrast(130%); }
+        .filter-vibrant { filter: saturate(150%) contrast(110%); }
+    </style>
+</head>
+<body class="flex flex-col xl:flex-row h-screen overflow-hidden select-none">
+
+    <!-- SOL YÖNETİM PANELİ -->
+    <aside class="w-full xl:w-[450px] bg-slate-900/95 backdrop-blur-md border-r border-slate-800 flex flex-col h-[50vh] xl:h-screen shrink-0 z-20">
+        
+        <!-- Üst Başlık & İndir -->
+        <div class="px-5 py-4 border-b border-slate-800 flex items-center justify-between bg-slate-950">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-purple-500 flex items-center justify-center font-black text-white text-base shadow-lg shadow-indigo-500/20">V3</div>
+                <div>
+                    <h1 class="text-sm font-black tracking-wide text-white uppercase">Haber Stüdyosu</h1>
+                    <p class="text-[10px] text-slate-400">Pro Medya Yönetimi v3.7.0</p>
+                </div>
+            </div>
+            <button id="downloadBtn" onclick="exportInstagramPost()" class="flex items-center gap-2 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-bold text-xs py-2 px-4 rounded-lg transition-all active:scale-95 shadow-lg shadow-red-500/30">
+                PNG İNDİR
+            </button>
+        </div>
+
+        <!-- Sekmeler -->
+        <div class="flex border-b border-slate-800 bg-slate-900 overflow-x-auto whitespace-nowrap">
+            <button onclick="switchTab('content')" id="tabBtn-content" class="tab-btn px-4 py-3 text-xs font-bold border-b-2 border-indigo-500 text-indigo-400 transition-all flex-1">İçerik</button>
+            <button onclick="switchTab('style')" id="tabBtn-style" class="tab-btn px-4 py-3 text-xs font-bold border-b-2 border-transparent text-slate-400 transition-all flex-1">Tasarım</button>
+            <button onclick="switchTab('media')" id="tabBtn-media" class="tab-btn px-4 py-3 text-xs font-bold border-b-2 border-transparent text-slate-400 transition-all flex-1">Görsel</button>
+            <button onclick="switchTab('brand')" id="tabBtn-brand" class="tab-btn px-4 py-3 text-xs font-bold border-b-2 border-transparent text-slate-400 transition-all flex-1">Marka</button>
+        </div>
+
+        <!-- İçerik Alanı -->
+        <div class="flex-1 overflow-y-auto p-5 space-y-6">
+            
+            <!-- SEKME 1: İÇERİK -->
+            <div id="tab-content" class="space-y-4">
+                <div class="bg-indigo-500/10 border border-indigo-500/20 p-3 rounded-xl mb-4">
+                    <label class="block text-[10px] font-bold text-indigo-300 uppercase mb-2">Carousel (Kaydırmalı) Slayt Seçimi</label>
+                    <div class="flex gap-2">
+                        <button onclick="setSlide(0)" id="slideBtn-0" class="flex-1 py-1.5 rounded-lg bg-indigo-600 text-white text-xs font-bold transition-all">Kapak</button>
+                        <button onclick="setSlide(1)" id="slideBtn-1" class="flex-1 py-1.5 rounded-lg bg-slate-800 text-slate-300 text-xs font-bold hover:bg-slate-700 transition-all">1. Slayt</button>
+                        <button onclick="setSlide(2)" id="slideBtn-2" class="flex-1 py-1.5 rounded-lg bg-slate-800 text-slate-300 text-xs font-bold hover:bg-slate-700 transition-all">2. Slayt</button>
+                        <button onclick="setSlide(3)" id="slideBtn-3" class="flex-1 py-1.5 rounded-lg bg-slate-800 text-slate-300 text-xs font-bold hover:bg-slate-700 transition-all">3. Slayt</button>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 uppercase mb-1.5">Ana Başlık / Konu</label>
+                    <textarea id="inputHeadline" rows="3" class="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-sm text-white font-medium outline-none focus:border-indigo-500 resize-none">Şanlıurfa ve çevre illerde hissedilen büyük sarsıntı.</textarea>
+                    <p class="text-[10px] text-slate-400 mt-1">💡 İpucu: Vurgulamak istediğiniz kelimenin başına ve sonuna yıldız koyun, örn: *büyük sarsıntı*</p>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 uppercase mb-1.5">Alt Metin / Kişi Bilgisi / Tweet İçeriği</label>
+                    <textarea id="inputSubtext" rows="3" class="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-xs text-slate-200 outline-none focus:border-indigo-500 resize-none">AFAD verilerine göre merkez üssü bölgede olan sarsıntıda ilk belirlemelere göre hasar bildirilmedi.</textarea>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Dikey Kategori / Alan</label>
+                        <input type="text" id="inputCategory" value="TÜRKİYE" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white uppercase font-bold outline-none">
+                    </div>
+                    <div>
+                        <div class="flex items-center justify-between mb-1">
+                            <label class="block text-[10px] font-bold text-slate-400 uppercase">Vurgu Bant Metni</label>
+                            <input type="checkbox" id="badgeToggle" checked class="w-3.5 h-3.5 accent-indigo-500 rounded cursor-pointer" title="Bant Metnini Göster/Gizle">
+                        </div>
+                        <input type="text" id="inputBadge" value="SON DAKİKA" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white uppercase font-bold outline-none">
+                    </div>
+                </div>
+            </div>
+
+            <!-- SEKME 2: TASARIM -->
+            <div id="tab-style" class="space-y-6 hidden">
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 uppercase mb-3">Şablon Stili</label>
+                    <div class="grid grid-cols-2 gap-3">
+                        <button onclick="selectTemplate('bpt')" id="tplBtn-bpt" class="p-3 rounded-xl border-2 border-indigo-500 bg-indigo-500/10 flex flex-col gap-1.5">
+                            <span class="text-xs font-bold text-white">Klasik</span>
+                            <span class="text-[9px] text-indigo-200">Sol raylı, alttan metinli</span>
+                        </button>
+                        <button onclick="selectTemplate('breaking')" id="tplBtn-breaking" class="p-3 rounded-xl border-2 border-slate-700 bg-slate-950 flex flex-col gap-1.5 transition-all">
+                            <span class="text-xs font-bold text-slate-300">Acil Bant</span>
+                            <span class="text-[9px] text-slate-500">Merkez manşet, kırmızı bant</span>
+                        </button>
+                        <button onclick="selectTemplate('quote')" id="tplBtn-quote" class="p-3 rounded-xl border-2 border-slate-700 bg-slate-950 flex flex-col gap-1.5 transition-all">
+                            <span class="text-xs font-bold text-slate-300">Alıntı / Söz</span>
+                            <span class="text-[9px] text-slate-500">Röportaj ve demeçler için</span>
+                        </button>
+                        <button onclick="selectTemplate('split')" id="tplBtn-split" class="p-3 rounded-xl border-2 border-slate-700 bg-slate-950 flex flex-col gap-1.5 transition-all relative overflow-hidden">
+                            <div class="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-red-500/10"></div>
+                            <span class="text-xs font-bold text-slate-300 relative z-10">Bölünmüş Ekran</span>
+                            <span class="text-[9px] text-slate-500 relative z-10">Kıyaslama ve Karşılaştırma</span>
+                        </button>
+                        <button onclick="selectTemplate('social')" id="tplBtn-social" class="p-3 rounded-xl border-2 border-slate-700 bg-slate-950 flex flex-col gap-1.5 transition-all">
+                            <span class="text-xs font-bold text-slate-300">X (Twitter) Kartı</span>
+                            <span class="text-[9px] text-slate-500">Güncel sosyal medya alıntısı</span>
+                        </button>
+                        <button onclick="selectTemplate('video')" id="tplBtn-video" class="p-3 rounded-xl border-2 border-slate-700 bg-slate-950 flex flex-col gap-1.5 transition-all">
+                            <span class="text-xs font-bold text-slate-300">Video Postu</span>
+                            <span class="text-[9px] text-slate-500">Oynatıcı görünümü</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 uppercase mb-2">Haber Kategorisi Teması</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button onclick="setCategoryTheme('general')" id="catBtn-general" class="p-2.5 rounded-xl border border-indigo-500 bg-indigo-500/10 text-[11px] font-bold text-white transition-all">Genel / Haber</button>
+                        <button onclick="setCategoryTheme('sports')" id="catBtn-sports" class="p-2.5 rounded-xl border border-slate-700 bg-slate-950 text-[11px] font-bold text-slate-300 transition-all">⚽ Spor</button>
+                        <button onclick="setCategoryTheme('finance')" id="catBtn-finance" class="p-2.5 rounded-xl border border-slate-700 bg-slate-950 text-[11px] font-bold text-slate-300 transition-all">📈 Finans</button>
+                        <button onclick="setCategoryTheme('tech')" id="catBtn-tech" class="p-2.5 rounded-xl border border-slate-700 bg-slate-950 text-[11px] font-bold text-slate-300 transition-all">🚀 Teknoloji</button>
+                        <button onclick="setCategoryTheme('health')" id="catBtn-health" class="p-2.5 rounded-xl border border-slate-700 bg-slate-950 text-[11px] font-bold text-slate-300 transition-all">🩺 Sağlık</button>
+                        <button onclick="setCategoryTheme('magazine')" id="catBtn-magazine" class="p-2.5 rounded-xl border border-slate-700 bg-slate-950 text-[11px] font-bold text-slate-300 transition-all">🎭 Magazin</button>
+                        <button onclick="setCategoryTheme('culture')" id="catBtn-culture" class="p-2.5 rounded-xl border border-slate-700 bg-slate-950 text-[11px] font-bold text-slate-300 transition-all col-span-2">🎨 Kültür & Sanat</button>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 uppercase mb-3">Görsel Formatı (Boyut)</label>
+                    <div class="grid grid-cols-3 gap-2">
+                        <button onclick="selectRatio('square')" id="ratioBtn-square" class="p-2 rounded-xl border-2 border-slate-700 bg-slate-950 text-[10px] font-bold text-slate-300 transition-all">1:1 Kare</button>
+                        <button onclick="selectRatio('portrait')" id="ratioBtn-portrait" class="p-2 rounded-xl border-2 border-indigo-500 bg-indigo-500/10 text-[10px] font-bold text-white transition-all">4:5 Portre</button>
+                        <button onclick="selectRatio('reels')" id="ratioBtn-reels" class="p-2 rounded-xl border-2 border-slate-700 bg-slate-950 text-[10px] font-bold text-slate-300 transition-all">9:16 Hikaye</button>
+                    </div>
+                </div>
+
+                <div class="space-y-4 pt-4 border-t border-slate-800">
+                    <div class="flex justify-between text-xs font-bold text-slate-300 mb-1">
+                        <span>Başlık Boyutu (<span id="headlineSizeLabel">22 px</span>)</span>
+                    </div>
+                    <input type="range" id="headlineSizeSlider" min="14" max="48" value="22" class="w-full accent-indigo-500">
+                </div>
+            </div>
+
+            <!-- SEKME 3: MEDYA & GÖRSEL -->
+            <div id="tab-media" class="space-y-5 hidden">
+                <div class="p-4 rounded-xl border border-slate-700 bg-slate-950">
+                    <label class="block text-xs font-bold text-white uppercase mb-2">Ana Arka Plan (Görsel veya Video)</label>
+                    <input type="file" id="bgFileInput" accept="image/*,video/*" class="block w-full text-xs text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-indigo-600 file:text-white hover:file:bg-indigo-700 cursor-pointer">
+                </div>
+
+                <!-- Fotoğraf Filtreleri -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 uppercase mb-2">Görsel Renk Filtresi</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button onclick="setPhotoFilter('normal')" id="filterBtn-normal" class="p-2 rounded-xl border border-indigo-500 bg-indigo-500/10 text-[11px] font-bold text-white">Normal</button>
+                        <button onclick="setPhotoFilter('filter-grayscale')" id="filterBtn-grayscale" class="p-2 rounded-xl border border-slate-700 bg-slate-950 text-[11px] font-bold text-slate-300">Siyah & Beyaz</button>
+                        <button onclick="setPhotoFilter('filter-cinematic')" id="filterBtn-cinematic" class="p-2 rounded-xl border border-slate-700 bg-slate-950 text-[11px] font-bold text-slate-300">Sinematik Sıcak</button>
+                        <button onclick="setPhotoFilter('filter-cyberpunk')" id="filterBtn-cyberpunk" class="p-2 rounded-xl border border-slate-700 bg-slate-950 text-[11px] font-bold text-slate-300">Cyberpunk Neon</button>
+                    </div>
+                </div>
+
+                <div id="splitImageContainer" class="p-4 rounded-xl border border-red-500/30 bg-red-500/5 hidden transition-all">
+                    <label class="block text-xs font-bold text-red-300 uppercase mb-2">2. Görsel (Sadece Bölünmüş Ekran)</label>
+                    <input type="file" id="splitFileInput" accept="image/*" class="block w-full text-xs text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-red-600 file:text-white hover:file:bg-red-700 cursor-pointer">
+                </div>
+
+                <div class="space-y-4 pt-2">
+                    <div class="flex justify-between text-xs font-bold text-slate-300 mb-1">
+                        <span>Arka Plan Karartma (Okunabilirlik)</span>
+                        <span id="opacityLabel">%70</span>
+                    </div>
+                    <input type="range" id="opacitySlider" min="0" max="100" value="70" class="w-full accent-indigo-500">
+                </div>
+            </div>
+
+            <!-- SEKME 4: MARKA & AYARLAR -->
+            <div id="tab-brand" class="space-y-5 hidden">
+                <div class="p-4 rounded-xl border border-amber-500/30 bg-amber-500/5 space-y-3">
+                    <div class="flex items-center justify-between">
+                        <label class="block text-xs font-bold text-amber-300 uppercase">İçerik Koruma (Filigran)</label>
+                        <input type="checkbox" id="watermarkToggle" class="w-4 h-4 accent-amber-600 rounded cursor-pointer">
+                    </div>
+                    <input type="text" id="watermarkInput" value="@SayfaIsmi" placeholder="Filigran Metni" class="w-full bg-slate-900 border border-amber-500/30 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-amber-500 opacity-50 transition-all pointer-events-none" disabled>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Kısa Logo (Harf)</label>
+                        <input type="text" id="inputLogoText" value="HB" maxlength="4" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-center text-white uppercase font-black outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Sayfa / Alt İsim</label>
+                        <input type="text" id="inputPageName" value="HABER MERKEZİ" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white uppercase font-bold outline-none">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Özel Görsel Logo Yükle</label>
+                    <input type="file" id="logoFileInput" accept="image/*" class="block w-full text-xs text-slate-400 file:mr-4 file:py-1.5 file:px-3 file:rounded-full file:border-0 file:text-[10px] file:font-semibold file:bg-slate-700 file:text-white hover:file:bg-slate-600 cursor-pointer">
+                    <button onclick="clearLogo()" class="text-[10px] text-red-400 hover:text-red-300 underline mt-2 hidden" id="clearLogoBtn">Görsel Logoyu Temizle</button>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-2">Vurgu Rengi</label>
+                        <div class="flex items-center gap-1.5">
+                            <button onclick="setAccentColor('#DC2626')" class="w-5 h-5 rounded-full bg-red-600 border border-white/20"></button>
+                            <button onclick="setAccentColor('#1D4ED8')" class="w-5 h-5 rounded-full bg-blue-700 border border-white/20"></button>
+                            <button onclick="setAccentColor('#10B981')" class="w-5 h-5 rounded-full bg-emerald-500 border border-white/20"></button>
+                            <input type="color" id="accentColorInput" value="#DC2626" class="w-6 h-6 rounded cursor-pointer bg-transparent border-0 outline-none ml-auto">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-2">Kurumsal Yazı Tipi</label>
+                        <select id="fontSelect" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-2 py-1.5 text-[10px] text-white font-bold outline-none">
+                            <option value="font-montserrat">Montserrat (Modern)</option>
+                            <option value="font-oswald">Oswald (Manşet)</option>
+                            <option value="font-roboto">Roboto (Klasik)</option>
+                            <option value="font-playfair">Playfair (Serif)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button onclick="saveBrandPreset()" class="w-full mt-4 py-3 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold rounded-xl border border-slate-600 transition-all flex justify-center items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                    Marka Ayarlarımı Kaydet
+                </button>
+            </div>
+        </div>
+    </aside>
+
+    <!-- SAĞ ALAN: CANLI ÖNİZLEME -->
+    <main class="flex-1 bg-slate-950 flex flex-col items-center justify-center p-4 xl:p-8 overflow-y-auto relative preview-grid-bg h-[50vh] xl:h-screen">
+        
+        <div id="instagramPostCanvas" class="relative bg-black post-shadow overflow-hidden transition-all duration-300 flex flex-col justify-between"
+             style="width: 340px; height: 425px; border-radius: 12px;">
+            
+            <!-- Medya Katmanı (Resim 1) -->
+            <img id="postBgImage" class="media-layer object-cover transition-opacity duration-300" src="https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=1200&q=80">
+            
+            <!-- Medya Katmanı (Video) -->
+            <video id="postBgVideo" class="media-layer object-cover transition-opacity duration-300 hidden" autoplay loop muted playsinline></video>
+
+            <!-- Bölünmüş Ekran Katmanı -->
+            <div id="splitBgContainer" class="absolute inset-0 flex hidden z-10">
+                <div class="w-1/2 h-full overflow-hidden relative">
+                    <img id="splitBgImg1" class="absolute inset-0 w-full h-full object-cover" src="https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=1200&q=80">
+                </div>
+                <div class="w-1/2 h-full overflow-hidden relative border-l-4 border-white/50">
+                    <img id="splitBgImg2" class="absolute inset-0 w-full h-full object-cover" src="https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1200&q=80">
+                </div>
+            </div>
+
+            <div id="socialBlurOverlay" class="absolute inset-0 backdrop-blur-xl bg-black/40 hidden z-10"></div>
+            <div id="postOverlay" class="absolute inset-0 transition-all duration-300 z-10"
+                 style="background: linear-gradient(180deg, rgba(8, 12, 22, 0.3) 0%, rgba(5, 7, 14, 0.7) 100%);">
+            </div>
+            <div id="watermarkLayer" class="watermark-overlay hidden opacity-10"></div>
+
+            <!-- ================= ŞABLON 1: KLASİK ================= -->
+            <div id="bptTemplate" class="relative w-full h-full flex flex-col justify-between z-25 pointer-events-none">
+                <div class="absolute left-4 top-5 bottom-5 flex flex-col items-center z-30 max-w-[50px]">
+                    <div id="bptLogoBadge" class="w-10 h-10 rounded-full bg-white shadow-xl flex items-center justify-center border-2 border-red-600 overflow-hidden relative shrink-0">
+                        <span class="logo-text-display font-black text-slate-900 text-[10px] tracking-tighter absolute text-center px-1 truncate w-full">HB</span>
+                        <img class="custom-logo-display w-full h-full object-contain bg-white hidden absolute z-10" src="">
+                    </div>
+                    <div class="w-[2px] flex-1 my-3 bg-gradient-to-b from-white/80 via-white/40 to-white/10 rounded-full"></div>
+                    <div class="vertical-rail-text font-black text-[10px] tracking-widest text-white/90 drop-shadow flex items-center gap-1.5 pb-2 max-h-[220px] overflow-hidden">
+                        <svg class="w-3 h-3 text-red-500 transform rotate-90 shrink-0 accent-svg" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/></svg>
+                        <span class="category-display truncate">TÜRKİYE</span>
+                    </div>
+                </div>
+
+                <div id="badgeContainer" class="w-full flex justify-end p-5 z-30">
+                    <div class="badge-display bg-red-600 text-white font-oswald font-bold text-[11px] tracking-wider px-2.5 py-1 rounded shadow uppercase max-w-[200px] truncate">
+                        SON DAKİKA
+                    </div>
+                </div>
+
+                <div class="pl-16 pr-5 pb-8 flex flex-col justify-end gap-2 z-30 mt-auto">
+                    <h2 class="headline-display font-montserrat font-black text-[22px] leading-[1.2] text-white tracking-tight drop-shadow-md">Başlık</h2>
+                    <p class="subtext-display text-[11px] text-slate-200 font-medium leading-snug drop-shadow line-clamp-4">Açıklama</p>
+                    <div class="mt-2 flex items-center justify-between border-t border-white/20 pt-2 text-[9px] text-slate-400 font-bold tracking-wider">
+                        <span class="pagename-display text-white/80 uppercase truncate max-w-[100%]">SAYFA</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ================= ŞABLON 2: ACİL BANT ================= -->
+            <div id="breakingTemplate" class="relative w-full h-full flex flex-col justify-between z-25 pointer-events-none hidden">
+                <div class="w-full pt-6 flex flex-col gap-3 overflow-hidden">
+                    <div class="px-5 flex items-center justify-between">
+                        <div class="flex items-center gap-1.5 bg-blue-600/90 accent-bg text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow">
+                            <span class="w-1.5 h-1.5 rounded-full bg-white"></span>
+                            <span class="category-display truncate max-w-[120px]">KATEGORİ</span>
+                        </div>
+                    </div>
+                    <div id="breakingBadgeWrapper" class="-ml-4 -mr-4 transform -rotate-2 mt-1 relative z-10 w-[120%]">
+                        <div class="badge-display bg-red-600 py-2 px-8 shadow-2xl flex items-center gap-2 w-full">
+                            <span class="w-2 h-2 rounded-full bg-white shrink-0"></span>
+                            <span class="badge-text-display font-oswald font-bold tracking-widest text-white text-xl uppercase drop-shadow truncate">BANT</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="px-6 py-4 flex flex-col items-center justify-center my-auto bg-black/40 backdrop-blur-[2px] rounded-2xl mx-3 border border-white/10 shadow-2xl">
+                    <h2 class="headline-display font-montserrat font-black text-2xl leading-[1.1] text-white text-center uppercase tracking-tight drop-shadow-[0_4px_12px_rgba(0,0,0,0.9)]">Başlık</h2>
+                    <p class="subtext-display text-[11px] text-slate-100 font-semibold text-center mt-3 max-w-[95%] leading-relaxed drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]">Açıklama</p>
+                </div>
+
+                <div class="p-5 pb-8 mt-auto">
+                    <div class="flex items-center justify-between border-t border-white/20 pt-2.5">
+                        <div class="flex items-center gap-2 max-w-[100%] overflow-hidden">
+                            <div class="w-5 h-5 rounded badge-display bg-blue-600 flex items-center justify-center shrink-0 relative overflow-hidden shadow">
+                                <span class="logo-short-display font-black text-white text-[9px]">HB</span>
+                                <img class="custom-logo-display w-full h-full object-contain bg-white hidden absolute z-10" src="">
+                            </div>
+                            <span class="pagename-display text-[10px] font-black text-white uppercase truncate drop-shadow">SAYFA</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ================= ŞABLON 3: ALINTI ================= -->
+            <div id="quoteTemplate" class="relative w-full h-full flex flex-col justify-between z-25 pointer-events-none hidden">
+                <div class="p-6 pb-2 z-10">
+                    <div class="text-[80px] leading-[60px] font-playfair text-amber-500 opacity-80 accent-text">“</div>
+                </div>
+                <div class="px-6 flex flex-col justify-end z-10 flex-1 pb-10 mt-auto">
+                    <h2 class="headline-display font-playfair italic font-bold text-[24px] leading-snug text-white drop-shadow-lg mb-4">Söz</h2>
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full border-2 border-amber-500 accent-border flex items-center justify-center bg-black/50 overflow-hidden relative shrink-0">
+                            <span class="logo-short-display font-bold text-white text-[10px]">HB</span>
+                            <img class="custom-logo-display w-full h-full object-contain bg-white p-0.5 hidden absolute z-10" src="">
+                        </div>
+                        <div class="flex flex-col overflow-hidden max-w-[80%]">
+                            <span class="subtext-display text-amber-400 accent-text font-bold text-xs uppercase tracking-wide truncate">İSİM</span>
+                            <span class="pagename-display text-white/60 text-[9px] uppercase truncate">SAYFA</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ================= ŞABLON 4: BÖLÜNMÜŞ ================= -->
+            <div id="splitTemplate" class="relative w-full h-full flex flex-col justify-between z-25 pointer-events-none hidden">
+                <div id="splitBadgeWrapper" class="w-full flex justify-center pt-5 z-30">
+                    <div class="badge-display bg-red-600 text-white font-oswald font-bold text-[12px] tracking-widest px-4 py-1.5 rounded-full shadow-lg uppercase border border-white/20 truncate max-w-[80%]">
+                        KARŞILAŞTIRMA
+                    </div>
+                </div>
+                
+                <div class="px-6 pb-8 pt-10 flex flex-col items-center justify-end bg-gradient-to-t from-black via-black/80 to-transparent z-30 mt-auto">
+                    <h2 class="headline-display font-montserrat font-black text-[20px] leading-[1.2] text-white text-center tracking-tight drop-shadow-md">Başlık</h2>
+                    <p class="subtext-display text-[11px] text-slate-300 font-medium text-center mt-2 drop-shadow">Açıklama</p>
+                    <div class="w-12 h-1 accent-bg bg-red-600 mt-3 rounded-full"></div>
+                </div>
+            </div>
+
+            <!-- ================= ŞABLON 5: SOSYAL KART ================= -->
+            <div id="socialTemplate" class="relative w-full h-full flex flex-col items-center justify-center z-25 pointer-events-none px-4 hidden">
+                <div class="bg-slate-900/95 border border-slate-700/80 p-5 rounded-2xl w-[92%] shadow-2xl relative overflow-hidden backdrop-blur-md">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center gap-2.5 overflow-hidden">
+                            <div class="w-9 h-9 rounded-full bg-slate-800 border border-slate-700 overflow-hidden shrink-0 flex items-center justify-center">
+                                <span class="logo-short-display font-black text-white text-[10px]">HB</span>
+                                <img class="custom-logo-display w-full h-full object-contain bg-white hidden absolute z-10" src="">
+                            </div>
+                            <div class="flex flex-col overflow-hidden leading-tight">
+                                <div class="flex items-center gap-1">
+                                    <span class="category-display text-white font-bold text-xs truncate">İSİM / KURUMLAR</span>
+                                    <svg class="w-3.5 h-3.5 text-sky-400 shrink-0" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                                </div>
+                                <span class="text-slate-400 text-[10px] truncate">@<span class="pagename-display">SAYFA</span></span>
+                            </div>
+                        </div>
+                        <svg class="w-4 h-4 text-slate-400 shrink-0" fill="currentColor" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                    </div>
+                    <p class="headline-display font-inter font-normal text-slate-100 text-[14px] leading-relaxed mb-3">X platformundan güncel paylaşım metni buraya yansıtılır.</p>
+                    <div class="flex items-center justify-between pt-3 border-t border-slate-800 text-[10px] text-slate-400 font-medium">
+                        <span>14:45 · 24 Eyl 2026</span>
+                        <div class="flex items-center gap-3">
+                            <span class="flex items-center gap-1">❤️ <strong>12.4B</strong></span>
+                            <span class="flex items-center gap-1">🔄 <strong>2.1B</strong></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ================= ŞABLON 6: VİDEO ================= -->
+            <div id="videoTemplate" class="relative w-full h-full flex flex-col justify-between z-25 pointer-events-none hidden">
+                <div class="p-4 flex justify-between items-start z-30">
+                    <div class="w-8 h-8 rounded-full bg-black/60 backdrop-blur-md flex items-center justify-center overflow-hidden border border-white/20 shrink-0">
+                         <span class="logo-short-display font-black text-white text-[9px]">HB</span>
+                         <img class="custom-logo-display w-full h-full object-contain bg-white hidden absolute z-10" src="">
+                    </div>
+                </div>
+                <div class="absolute inset-0 flex items-center justify-center z-10">
+                    <div class="w-14 h-14 rounded-full bg-black/50 backdrop-blur-sm border border-white/40 flex items-center justify-center pl-0.5 shadow-2xl">
+                        <svg class="w-7 h-7 text-white opacity-90" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                    </div>
+                </div>
+                <div class="p-5 flex flex-col justify-end bg-gradient-to-t from-black via-black/80 to-transparent pt-20 z-30 mt-auto">
+                    <h2 class="headline-display font-montserrat font-black text-[18px] leading-[1.2] text-white tracking-tight drop-shadow-md mb-2">Başlık</h2>
+                    <p class="subtext-display text-[11px] text-slate-300 font-medium leading-snug drop-shadow line-clamp-2">Açıklama</p>
+                </div>
+            </div>
+
+            <div id="carouselIndicators" class="absolute bottom-2 left-0 w-full flex justify-center gap-1.5 z-40">
+                <div class="dot w-4 h-1.5 bg-white rounded-full opacity-100"></div>
+                <div class="dot w-1.5 h-1.5 bg-white rounded-full opacity-40"></div>
+                <div class="dot w-1.5 h-1.5 bg-white rounded-full opacity-40"></div>
+            </div>
+
+        </div>
+    </main>
+
+<script>
+    const state = {
+        template: 'bpt', 
+        ratio: 'portrait',
+        slideIndex: 0,
+        headline: document.getElementById('inputHeadline').value,
+        subtext: document.getElementById('inputSubtext').value,
+        category: document.getElementById('inputCategory').value,
+        badge: document.getElementById('inputBadge').value,
+        showBadge: true,
+        logoText: 'HB',
+        pageName: 'HABER MERKEZİ',
+        accentColor: '#DC2626',
+        headlineSize: 22,
+        fontFamily: 'font-montserrat',
+        mediaUrl: 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=1200&q=80',
+        videoUrl: null,
+        splitMediaUrl: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1200&q=80',
+        customLogoUrl: null,
+        overlayOpacity: 70,
+        watermarkEnabled: false,
+        watermarkText: '@SayfaIsmi',
+        categoryTheme: 'general',
+        photoFilter: 'normal'
+    };
+
+    const themes = {
+        general: { accent: '#DC2626', badge: 'SON DAKİKA' },
+        sports: { accent: '#10B981', badge: 'MAÇ SONUCU' },
+        finance: { accent: '#2563EB', badge: 'PİYASA' },
+        tech: { accent: '#8B5CF6', badge: 'YENİ TEKNOLOJİ' },
+        health: { accent: '#0D9488', badge: 'SAĞLIK AJANDA' },
+        magazine: { accent: '#C026D3', badge: 'MAGAZİN' },
+        culture: { accent: '#B45309', badge: 'KÜLTÜR SANAT' }
+    };
+
+    function setCategoryTheme(themeKey) {
+        state.categoryTheme = themeKey;
+        ['general', 'sports', 'finance', 'tech', 'health', 'magazine', 'culture'].forEach(k => {
+            const btn = document.getElementById(`catBtn-${k}`);
+            if(btn) {
+                btn.classList.remove('border-indigo-500', 'bg-indigo-500/10', 'text-white');
+                btn.classList.add('border-slate-700', 'bg-slate-950', 'text-slate-300');
+            }
+        });
+        const activeBtn = document.getElementById(`catBtn-${themeKey}`);
+        if(activeBtn) {
+            activeBtn.classList.remove('border-slate-700', 'bg-slate-950', 'text-slate-300');
+            activeBtn.classList.add('border-indigo-500', 'bg-indigo-500/10', 'text-white');
+        }
+
+        const th = themes[themeKey];
+        if(th) {
+            setAccentColor(th.accent);
+            document.getElementById('inputBadge').value = th.badge;
+            state.badge = th.badge;
+            renderCanvas();
+        }
+    }
+
+    function setPhotoFilter(filterName) {
+        state.photoFilter = filterName;
+        ['normal', 'filter-grayscale', 'filter-cinematic', 'filter-cyberpunk'].forEach(f => {
+            const btn = document.getElementById(`filterBtn-${f}`);
+            if(btn) {
+                btn.classList.remove('border-indigo-500', 'bg-indigo-500/10', 'text-white');
+                btn.classList.add('border-slate-700', 'bg-slate-950', 'text-slate-300');
+            }
+        });
+        const activeBtn = document.getElementById(`filterBtn-${filterName}`);
+        if(activeBtn) {
+            activeBtn.classList.remove('border-slate-700', 'bg-slate-950', 'text-slate-300');
+            activeBtn.classList.add('border-indigo-500', 'bg-indigo-500/10', 'text-white');
+        }
+        renderCanvas();
+    }
+
+    function loadBrandPreset() {
+        const saved = localStorage.getItem('newsBrandPresetV3.7');
+        if(saved) {
+            const data = JSON.parse(saved);
+            state.logoText = data.logoText || 'HB';
+            state.pageName = data.pageName || 'HABER MERKEZİ';
+            state.accentColor = data.accentColor || '#DC2626';
+            state.fontFamily = data.fontFamily || 'font-montserrat';
+            if(data.customLogoUrl) state.customLogoUrl = data.customLogoUrl;
+            
+            document.getElementById('inputLogoText').value = state.logoText;
+            document.getElementById('inputPageName').value = state.pageName;
+            document.getElementById('accentColorInput').value = state.accentColor;
+            document.getElementById('fontSelect').value = state.fontFamily;
+            if(state.customLogoUrl) document.getElementById('clearLogoBtn').classList.remove('hidden');
+        }
+    }
+
+    function saveBrandPreset() {
+        const preset = {
+            logoText: state.logoText,
+            pageName: state.pageName,
+            accentColor: state.accentColor,
+            fontFamily: state.fontFamily,
+            customLogoUrl: state.customLogoUrl
+        };
+        localStorage.setItem('newsBrandPresetV3.7', JSON.stringify(preset));
+        alert('Marka ayarlarınız kaydedildi!');
+    }
+
+    function switchTab(tab) {
+        ['content', 'style', 'media', 'brand'].forEach(t => {
+            const el = document.getElementById(`tab-${t}`);
+            if(el) el.classList.add('hidden');
+            const btn = document.getElementById(`tabBtn-${t}`);
+            if(btn) {
+                btn.classList.remove('border-indigo-500', 'text-indigo-400');
+                btn.classList.add('border-transparent', 'text-slate-400');
+            }
+        });
+        const targetEl = document.getElementById(`tab-${tab}`);
+        if(targetEl) targetEl.classList.remove('hidden');
+        const targetBtn = document.getElementById(`tabBtn-${tab}`);
+        if(targetBtn) {
+            targetBtn.classList.remove('border-transparent', 'text-slate-400');
+            targetBtn.classList.add('border-indigo-500', 'text-indigo-400');
+        }
+    }
+
+    function selectTemplate(tpl) {
+        state.template = tpl;
+        ['bpt', 'breaking', 'quote', 'split', 'social', 'video'].forEach(t => {
+            const templateEl = document.getElementById(`${t}Template`);
+            if (templateEl) templateEl.classList.add('hidden');
+            const btn = document.getElementById(`tplBtn-${t}`);
+            if (btn) {
+                btn.classList.remove('border-indigo-500', 'bg-indigo-500/10');
+                btn.classList.add('border-slate-700', 'bg-slate-950');
+            }
+        });
+        
+        const activeTemplateEl = document.getElementById(`${tpl}Template`);
+        if (activeTemplateEl) activeTemplateEl.classList.remove('hidden');
+        
+        const activeBtn = document.getElementById(`tplBtn-${tpl}`);
+        if (activeBtn) {
+            activeBtn.classList.remove('border-slate-700', 'bg-slate-950');
+            activeBtn.classList.add('border-indigo-500', 'bg-indigo-500/10');
+        }
+        
+        const splitImageContainer = document.getElementById('splitImageContainer');
+        if (splitImageContainer) {
+            splitImageContainer.classList.toggle('hidden', tpl !== 'split');
+        }
+        
+        renderCanvas();
+    }
+
+    function selectRatio(ratio) {
+        state.ratio = ratio;
+        const canvas = document.getElementById('instagramPostCanvas');
+        ['square', 'portrait', 'reels'].forEach(r => {
+            const btn = document.getElementById(`ratioBtn-${r}`);
+            if (btn) {
+                btn.classList.remove('border-indigo-500', 'bg-indigo-500/10', 'text-white');
+                btn.classList.add('border-slate-700', 'bg-slate-950', 'text-slate-300');
+            }
+        });
+
+        if (canvas) {
+            if (ratio === 'square') { canvas.style.height = '340px'; }
+            if (ratio === 'portrait') { canvas.style.height = '425px'; }
+            if (ratio === 'reels') { canvas.style.height = '600px'; }
+        }
+
+        const activeBtn = document.getElementById(`ratioBtn-${ratio}`);
+        if (activeBtn) {
+            activeBtn.classList.remove('border-slate-700', 'bg-slate-950', 'text-slate-300');
+            activeBtn.classList.add('border-indigo-500', 'bg-indigo-500/10', 'text-white');
+        }
+    }
+
+    function setSlide(index) {
+        state.slideIndex = index;
+        [0, 1, 2, 3].forEach(i => {
+            const btn = document.getElementById(`slideBtn-${i}`);
+            if(btn) {
+                btn.classList.remove('bg-indigo-600', 'text-white');
+                btn.classList.add('bg-slate-800', 'text-slate-300');
+            }
+        });
+        const activeBtn = document.getElementById(`slideBtn-${index}`);
+        if(activeBtn) {
+            activeBtn.classList.remove('bg-slate-800', 'text-slate-300');
+            activeBtn.classList.add('bg-indigo-600', 'text-white');
+        }
+        renderCanvas();
+    }
+
+    function setAccentColor(hex) {
+        state.accentColor = hex;
+        document.getElementById('accentColorInput').value = hex;
+        renderCanvas();
+    }
+
+    function clearLogo() {
+        state.customLogoUrl = null;
+        document.getElementById('logoFileInput').value = '';
+        document.getElementById('clearLogoBtn').classList.add('hidden');
+        renderCanvas();
+    }
+
+    function getWatermarkPattern(text) {
+        const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><text x="50%" y="50%" transform="rotate(-35 100 100)" text-anchor="middle" font-family="sans-serif" font-size="24" fill="white" font-weight="900" opacity="1">${text}</text></svg>`;
+        return `url("data:image/svg+xml;utf8,${encodeURIComponent(svg)}")`;
+    }
+
+    // Yıldız aralarını vurgulama (Highlight)
+    function formatHeadline(text) {
+        return text.replace(/\*(.*?)\*/g, `<span style="color: ${state.accentColor}; font-weight: 900;">$1</span>`);
+    }
+
+    function renderCanvas() {
+        document.querySelectorAll('.headline-display').forEach(el => {
+            if(!el.closest('#socialTemplate')) {
+                el.innerHTML = formatHeadline(state.headline);
+            } else {
+                el.innerText = state.headline;
+            }
+        });
+        
+        document.querySelectorAll('.subtext-display').forEach(el => el.innerText = state.subtext);
+        document.querySelectorAll('.category-display').forEach(el => el.innerText = state.category);
+        document.querySelectorAll('.pagename-display').forEach(el => el.innerText = state.pageName);
+        document.querySelectorAll('.logo-text-display').forEach(el => el.innerText = state.logoText);
+        document.querySelectorAll('.logo-short-display').forEach(el => el.innerText = state.logoText.slice(0, 2));
+        
+        document.querySelectorAll('.badge-display').forEach(el => {
+            if(el.childNodes.length === 1 || el.tagName==='DIV' && !el.classList.contains('flex')) {
+                if(!el.classList.contains('w-5') && !el.classList.contains('w-8')) el.innerText = state.badge;
+            }
+        });
+        const bannerText = document.querySelector('.badge-text-display');
+        if(bannerText) bannerText.innerText = state.badge;
+
+        const badgeContainer = document.getElementById('badgeContainer');
+        const breakingBadgeWrapper = document.getElementById('breakingBadgeWrapper');
+        const splitBadgeWrapper = document.getElementById('splitBadgeWrapper');
+
+        if(badgeContainer) badgeContainer.style.display = state.showBadge ? 'flex' : 'none';
+        if(breakingBadgeWrapper) breakingBadgeWrapper.style.display = state.showBadge ? 'block' : 'none';
+        if(splitBadgeWrapper) splitBadgeWrapper.style.display = state.showBadge ? 'flex' : 'none';
+
+        document.querySelectorAll('.headline-display').forEach(el => {
+            if(!el.closest('#socialTemplate')) {
+                el.style.fontSize = `${state.headlineSize}px`;
+            }
+            ['font-montserrat', 'font-oswald', 'font-playfair', 'font-roboto'].forEach(f => el.classList.remove(f));
+            if(!el.closest('#socialTemplate')) {
+               el.classList.add(state.fontFamily);
+            }
+        });
+
+        document.querySelectorAll('.badge-display').forEach(el => el.style.backgroundColor = state.accentColor);
+        document.querySelectorAll('.accent-text').forEach(el => el.style.color = state.accentColor);
+        document.querySelectorAll('.accent-border').forEach(el => el.style.borderColor = state.accentColor);
+        document.querySelectorAll('.accent-svg').forEach(el => el.style.color = state.accentColor);
+        document.querySelectorAll('.accent-bg').forEach(el => el.style.backgroundColor = state.accentColor);
+        
+        const bptBadge = document.getElementById('bptLogoBadge');
+        if(bptBadge) bptBadge.style.borderColor = state.accentColor;
+
+        const postImg = document.getElementById('postBgImage');
+        const splitImg1 = document.getElementById('splitBgImg1');
+        const splitImg2 = document.getElementById('splitBgImg2');
+
+        // Filtre uygulama
+        ['filter-grayscale', 'filter-cinematic', 'filter-cyberpunk'].forEach(f => {
+            postImg.classList.remove(f);
+            splitImg1.classList.remove(f);
+            splitImg2.classList.remove(f);
+        });
+        if(state.photoFilter !== 'normal') {
+            postImg.classList.add(state.photoFilter);
+            splitImg1.classList.add(state.photoFilter);
+            splitImg2.classList.add(state.photoFilter);
+        }
+
+        postImg.src = state.mediaUrl;
+        splitImg1.src = state.mediaUrl;
+        splitImg2.src = state.splitMediaUrl;
+        
+        document.querySelectorAll('.custom-logo-display').forEach(img => {
+            if(state.customLogoUrl) {
+                img.src = state.customLogoUrl;
+                img.classList.remove('hidden');
+            } else {
+                img.classList.add('hidden');
+            }
+        });
+
+        const postVideo = document.getElementById('postBgVideo');
+        const splitContainer = document.getElementById('splitBgContainer');
+        const socialBlur = document.getElementById('socialBlurOverlay');
+        const overlay = document.getElementById('postOverlay');
+
+        splitContainer.classList.add('hidden');
+        socialBlur.classList.add('hidden');
+
+        const op = state.overlayOpacity / 100;
+
+        if (state.template === 'split') {
+            postImg.classList.add('hidden');
+            postVideo.classList.add('hidden');
+            splitContainer.classList.remove('hidden');
+            overlay.style.background = `linear-gradient(180deg, rgba(0,0,0,${op * 0.5}) 0%, rgba(0,0,0,${op}) 100%)`;
+        } else {
+            if (state.videoUrl) {
+                postVideo.src = state.videoUrl;
+                postVideo.classList.remove('hidden');
+                postImg.classList.add('hidden');
+            } else {
+                postImg.src = state.mediaUrl;
+                postImg.classList.remove('hidden');
+                postVideo.classList.add('hidden');
+            }
+            
+            if (state.template === 'social') {
+                socialBlur.classList.remove('hidden');
+                overlay.style.background = `rgba(0,0,0,${op * 0.3})`;
+            } else if (state.template === 'quote') {
+                overlay.style.background = `linear-gradient(0deg, rgba(0,0,0,${op}) 0%, rgba(0,0,0,${op * 0.4}) 100%)`;
+            } else if (state.template === 'video') {
+                overlay.style.background = `linear-gradient(180deg, transparent 0%, transparent 40%, rgba(0,0,0,${op}) 100%)`;
+            } else {
+                overlay.style.background = `linear-gradient(180deg, rgba(8, 12, 22, ${op*0.3}) 0%, rgba(5, 7, 14, ${op}) 100%)`;
+            }
+        }
+
+        const wmLayer = document.getElementById('watermarkLayer');
+        if (state.watermarkEnabled && state.watermarkText) {
+            wmLayer.style.backgroundImage = getWatermarkPattern(state.watermarkText);
+            wmLayer.classList.remove('hidden');
+        } else {
+            wmLayer.classList.add('hidden');
+        }
+
+        const dotsContainer = document.getElementById('carouselIndicators');
+        if (state.slideIndex === 0) {
+            dotsContainer.classList.add('hidden');
+        } else {
+            dotsContainer.classList.remove('hidden');
+            dotsContainer.innerHTML = '';
+            for(let i=1; i<=3; i++) {
+                const dot = document.createElement('div');
+                dot.className = `dot rounded-full bg-white transition-all ${i === state.slideIndex ? 'w-4 h-1.5 opacity-100 shadow-md' : 'w-1.5 h-1.5 opacity-40'}`;
+                dotsContainer.appendChild(dot);
+            }
+        }
+    }
+
+    document.getElementById('inputHeadline').addEventListener('input', e => { state.headline = e.target.value; renderCanvas(); });
+    document.getElementById('inputSubtext').addEventListener('input', e => { state.subtext = e.target.value; renderCanvas(); });
+    document.getElementById('inputCategory').addEventListener('input', e => { state.category = e.target.value; renderCanvas(); });
+    document.getElementById('inputBadge').addEventListener('input', e => { state.badge = e.target.value; renderCanvas(); });
+    document.getElementById('badgeToggle').addEventListener('change', e => { state.showBadge = e.target.checked; renderCanvas(); });
+    document.getElementById('inputLogoText').addEventListener('input', e => { state.logoText = e.target.value; renderCanvas(); });
+    document.getElementById('inputPageName').addEventListener('input', e => { state.pageName = e.target.value; renderCanvas(); });
+    document.getElementById('accentColorInput').addEventListener('input', e => setAccentColor(e.target.value));
+    document.getElementById('fontSelect').addEventListener('change', e => { state.fontFamily = e.target.value; renderCanvas(); });
+    
+    document.getElementById('headlineSizeSlider').addEventListener('input', e => {
+        state.headlineSize = parseInt(e.target.value);
+        document.getElementById('headlineSizeLabel').innerText = `${state.headlineSize} px`;
+        renderCanvas();
+    });
+
+    document.getElementById('opacitySlider').addEventListener('input', e => {
+        state.overlayOpacity = parseInt(e.target.value);
+        document.getElementById('opacityLabel').innerText = `%${state.overlayOpacity}`;
+        renderCanvas();
+    });
+
+    document.getElementById('watermarkToggle').addEventListener('change', e => {
+        state.watermarkEnabled = e.target.checked;
+        const input = document.getElementById('watermarkInput');
+        input.disabled = !e.target.checked;
+        input.classList.toggle('opacity-50', !e.target.checked);
+        input.classList.toggle('pointer-events-none', !e.target.checked);
+        renderCanvas();
+    });
+    
+    document.getElementById('watermarkInput').addEventListener('input', e => {
+        state.watermarkText = e.target.value;
+        renderCanvas();
+    });
+
+    document.getElementById('bgFileInput').addEventListener('change', function(e) {
+        if (e.target.files[0]) {
+            const file = e.target.files[0];
+            const url = URL.createObjectURL(file);
+            if (file.type.startsWith('video/')) {
+                state.videoUrl = url;
+            } else {
+                state.videoUrl = null;
+                state.mediaUrl = url;
+            }
+            renderCanvas();
+        }
+    });
+    
+    document.getElementById('splitFileInput').addEventListener('change', function(e) {
+        if (e.target.files[0]) {
+            state.splitMediaUrl = URL.createObjectURL(e.target.files[0]);
+            renderCanvas();
+        }
+    });
+
+    document.getElementById('logoFileInput').addEventListener('change', function(e) {
+        if (e.target.files[0]) {
+            state.customLogoUrl = URL.createObjectURL(e.target.files[0]);
+            document.getElementById('clearLogoBtn').classList.remove('hidden');
+            renderCanvas();
+        }
+    });
+
+    function exportInstagramPost() {
+        const postElement = document.getElementById('instagramPostCanvas');
+        const btn = document.getElementById('downloadBtn');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = `İŞLENİYOR...`;
+
+        const targetScale = 1080 / 340; 
+        window.scrollTo(0,0);
+
+        html2canvas(postElement, {
+            scale: targetScale,
+            useCORS: true,
+            allowTaint: true,
+            backgroundColor: '#000000'
+        }).then(canvas => {
+            const link = document.createElement('a');
+            const ratioName = state.ratio === 'square' ? '1080x1080' : state.ratio === 'portrait' ? '1080x1350' : '1080x1920';
+            const slideName = state.slideIndex > 0 ? `_Slayt${state.slideIndex}` : '_Kapak';
+            link.download = `Haber_${ratioName}${slideName}.png`;
+            link.href = canvas.toDataURL('image/png', 0.95);
+            link.click();
+            btn.innerHTML = originalText;
+        }).catch(err => {
+            console.error('İndirme hatası:', err);
+            alert("İndirme sırasında bir hata oluştu.");
+            btn.innerHTML = originalText;
+        });
+    }
+
+    loadBrandPreset();
+    renderCanvas();
+</script>
+</body>
+</html>
