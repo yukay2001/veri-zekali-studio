@@ -23,6 +23,7 @@ async function runStudioRender() {
 
     const page = await browser.newPage();
 
+    // 1080 x 1350 piksel netliği (1080 / 340)
     await page.setViewport({
         width: 1280,
         height: 1000,
@@ -32,9 +33,23 @@ async function runStudioRender() {
     const filePath = path.join(process.cwd(), 'profesyonel_instagram_haber_st_dyosu_v3_7_0.html');
     await page.goto(`file://${filePath}`, { waitUntil: 'networkidle0' });
 
-    // Stüdyo State Hafızasını ve Panelini Doğrudan Güncelle
+    // Panel Kutularını Tıpkı Bir İnsan Yazıyormuş Gibi Tetikleyerek Doldur
     await page.evaluate((item) => {
-        // 1. Stüdyonun Çizim Hafızasını Güncelle (renderCanvas() burayı okur)
+        // 1. Kutulara Yaz ve 'input' Sinyali Gönder (Stüdyo bunu anında algılar)
+        function setAndTrigger(id, val) {
+            const el = document.getElementById(id);
+            if (el && val) {
+                el.value = val;
+                el.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+        }
+
+        setAndTrigger('inputHeadline', item.baslik);
+        setAndTrigger('inputSubtext', item.alt_metin || item.metin);
+        setAndTrigger('inputCategory', item.kategori);
+        setAndTrigger('inputBadge', item.rozet);
+
+        // 2. State Hafızasını da Doğrudan Garantiye Al
         state.headline = item.baslik || '';
         state.subtext = item.alt_metin || item.metin || '';
         state.category = item.kategori || 'SAVUNMA';
@@ -44,16 +59,6 @@ async function runStudioRender() {
         }
         state.logoText = 'VZ';
         state.pageName = 'VERİ ZEKALI';
-
-        // 2. Paneldeki Kutuları da Senkronize Et
-        const elH = document.getElementById('inputHeadline');
-        if (elH) elH.value = state.headline;
-        const elSub = document.getElementById('inputSubtext');
-        if (elSub) elSub.value = state.subtext;
-        const elCat = document.getElementById('inputCategory');
-        if (elCat) elCat.value = state.category;
-        const elBadge = document.getElementById('inputBadge');
-        if (elBadge) elBadge.value = state.badge;
 
         // 3. Şablon ve Temayı Uygula
         if (item.sablon && typeof selectTemplate === 'function') {
@@ -66,20 +71,20 @@ async function runStudioRender() {
             selectRatio('portrait');
         }
 
-        // 4. Çizimi Canlı Yenile
+        // 4. Çizimi Yenile
         if (typeof renderCanvas === 'function') {
             renderCanvas();
         }
     }, data);
 
-    // Görselin ve fontların tam yüklenmesi için 2.5 saniye bekle
-    await new Promise(r => setTimeout(r, 2500));
+    // Drive görselinin ve yazıların yüklenmesi için 3 saniye bekle
+    await new Promise(r => setTimeout(r, 3000));
 
     // Stüdyonun Kartını Yakala
     const postCanvas = await page.$('#instagramPostCanvas');
     await postCanvas.screenshot({ path: 'output.png' });
     await browser.close();
-    console.log("[✓] Gerçek Haber Görseli Başarıyla Üretildi!");
+    console.log("[✓] Görsel ve Başlıklar Başarıyla Üretildi!");
 
     // Görseli Drive'a ve Tabloya Gönder
     const base64Img = fs.readFileSync('output.png').toString('base64');
