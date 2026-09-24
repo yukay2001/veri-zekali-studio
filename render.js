@@ -16,7 +16,6 @@ async function runStudioRender() {
 
     console.log(`[+] Görev Alındı: ${data.baslik}`);
 
-    // Gerçek Chrome Tarayıcısını Başlat
     const browser = await puppeteer.launch({
         headless: 'new',
         args: ['--no-sandbox', '--disable-setuid-sandbox']
@@ -24,20 +23,39 @@ async function runStudioRender() {
 
     const page = await browser.newPage();
 
-    // 1080 x 1350 piksel netliği için ölçek faktörü (1080 / 340)
     await page.setViewport({
         width: 1280,
         height: 1000,
         deviceScaleFactor: 1080 / 340
     });
 
-    // Stüdyo Dosyanızı Aç
     const filePath = path.join(process.cwd(), 'profesyonel_instagram_haber_st_dyosu_v3_7_0.html');
     await page.goto(`file://${filePath}`, { waitUntil: 'networkidle0' });
 
-    // Stüdyo Paneline Verileri Doldur ve Şablonu Seç
+    // Stüdyo State Hafızasını ve Panelini Doğrudan Güncelle
     await page.evaluate((item) => {
-        // Şablon ve Kategori Seçimi (bpt, breaking, quote, split vb.)
+        // 1. Stüdyonun Çizim Hafızasını Güncelle (renderCanvas() burayı okur)
+        state.headline = item.baslik || '';
+        state.subtext = item.alt_metin || item.metin || '';
+        state.category = item.kategori || 'SAVUNMA';
+        state.badge = item.rozet || 'SON DAKİKA';
+        if (item.gorsel_url) {
+            state.mediaUrl = item.gorsel_url;
+        }
+        state.logoText = 'VZ';
+        state.pageName = 'VERİ ZEKALI';
+
+        // 2. Paneldeki Kutuları da Senkronize Et
+        const elH = document.getElementById('inputHeadline');
+        if (elH) elH.value = state.headline;
+        const elSub = document.getElementById('inputSubtext');
+        if (elSub) elSub.value = state.subtext;
+        const elCat = document.getElementById('inputCategory');
+        if (elCat) elCat.value = state.category;
+        const elBadge = document.getElementById('inputBadge');
+        if (elBadge) elBadge.value = state.badge;
+
+        // 3. Şablon ve Temayı Uygula
         if (item.sablon && typeof selectTemplate === 'function') {
             selectTemplate(item.sablon);
         }
@@ -48,42 +66,22 @@ async function runStudioRender() {
             selectRatio('portrait');
         }
 
-        // Panel Alanlarını Doldur
-        const elH = document.getElementById('inputHeadline');
-        if (elH && item.baslik) elH.value = item.baslik;
-
-        const elSub = document.getElementById('inputSubtext');
-        if (elSub && (item.alt_metin || item.metin)) elSub.value = item.alt_metin || item.metin;
-
-        const elCat = document.getElementById('inputCategory');
-        if (elCat && item.kategori) elCat.value = item.kategori;
-
-        const elBadge = document.getElementById('inputBadge');
-        if (elBadge && item.rozet) elBadge.value = item.rozet;
-
-        // Marka Bilgileri
-        state.logoText = 'VZ';
-        state.pageName = 'VERİ ZEKALI';
-        if (item.gorsel_url) {
-            state.mediaUrl = item.gorsel_url;
-        }
-
-        // Çizimi Güncelle
+        // 4. Çizimi Canlı Yenile
         if (typeof renderCanvas === 'function') {
             renderCanvas();
         }
     }, data);
 
-    // Fontların ve görselin yüklenmesi için 2 saniye bekle
-    await new Promise(r => setTimeout(r, 2000));
+    // Görselin ve fontların tam yüklenmesi için 2.5 saniye bekle
+    await new Promise(r => setTimeout(r, 2500));
 
-    // Stüdyonun Kendi Kartını 1080x1350 Piksel Olarak Yakala
+    // Stüdyonun Kartını Yakala
     const postCanvas = await page.$('#instagramPostCanvas');
     await postCanvas.screenshot({ path: 'output.png' });
     await browser.close();
-    console.log("[✓] 1080x1350 Görsel Başarıyla Üretildi: output.png");
+    console.log("[✓] Gerçek Haber Görseli Başarıyla Üretildi!");
 
-    // Üretilen Görseli Tabloya ve Drive'a İlet
+    // Görseli Drive'a ve Tabloya Gönder
     const base64Img = fs.readFileSync('output.png').toString('base64');
     const updateRes = await fetch(WEB_APP_URL, {
         method: 'POST',
@@ -95,7 +93,7 @@ async function runStudioRender() {
         })
     });
     const updateJson = await updateRes.json();
-    console.log("[✓] Tablo ve Drive Güncellendi:", updateJson);
+    console.log("[✓] Tablo Güncellendi:", updateJson);
 }
 
 runStudioRender().catch(err => {
